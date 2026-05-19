@@ -2,24 +2,11 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.venv/
 
 # Docker
 docker-compose.override.yml
 .env
-
-# Home Assistant
-ha_config/.storage/
-ha_config/.cloud/
-ha_config/.HA_VERSION
-ha_config/deps/
-ha_config/home-assistant.log
-ha_config/home-assistant.log.*
-ha_config/home-assistant_v2.db
-ha_config/home-assistant_v2.db-shm
-ha_config/home-assistant_v2.db-wal
-ha_config/tts/
-ha_config/blueprints/
-ha_config/.cache/
 
 # InfluxDB data
 influxdb_data/

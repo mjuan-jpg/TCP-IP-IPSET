@@ -35,18 +35,7 @@ services:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
     restart: unless-stopped
 
-  homeassistant:
-    image: homeassistant/home-assistant:stable
-    container_name: homeassistant
-    depends_on:
-      - influxdb
-    volumes:
-      - ./ha_config:/config
-    environment:
-      - TZ=America/Argentina/Buenos_Aires
-    ports:
-      - "8123:8123"
-    restart: unless-stopped
+
 
 volumes:
   influxdb_data:

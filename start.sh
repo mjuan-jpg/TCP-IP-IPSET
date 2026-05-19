@@ -24,7 +24,7 @@ echo -e "${BOLD}${CYAN}╚══════════════════
 # ── 1. Levantar contenedores ──────────────────────────────────
 echo -e "${YELLOW}[1/4] Levantando contenedores Docker...${RESET}"
 cd "$SCRIPT_DIR"
-docker compose up -d --build
+sudo docker compose up -d --build
 echo -e "${GREEN}      ✔ Contenedores en marcha.${RESET}\n"
 
 # ── 2. Esperar a que InfluxDB esté listo ─────────────────────
@@ -62,4 +62,4 @@ echo -e "${CYAN}║  Ctrl+C para dejar de ver logs (infra sigue   ║${RESET}"
 echo -e "${CYAN}║  corriendo). Usa ./stop.sh para detenerla.    ║${RESET}"
 echo -e "${BOLD}${CYAN}╚═══════════════════════════════════════════════╝${RESET}\n"
 
-docker compose logs -f --tail=50
+sudo docker compose logs -f --tail=50

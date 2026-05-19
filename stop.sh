@@ -19,11 +19,11 @@ echo -e "${BOLD}${RED}╚══════════════════�
 cd "$SCRIPT_DIR"
 
 echo -e "${YELLOW}[1/2] Deteniendo y eliminando contenedores...${RESET}"
-docker compose down
+sudo docker compose down
 echo -e "${GREEN}      ✔ Contenedores detenidos.${RESET}\n"
 
 echo -e "${YELLOW}[2/2] Estado final:${RESET}"
-docker compose ps
+sudo docker compose ps
 
 echo -e "\n${BOLD}${RED}╔═══════════════════════════════════════════════╗${RESET}"
 echo -e "${BOLD}${RED}║   Infraestructura DETENIDA correctamente.     ║${RESET}"

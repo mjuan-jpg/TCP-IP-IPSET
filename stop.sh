@@ -18,11 +18,16 @@ echo -e "${BOLD}${RED}╚══════════════════�
 
 cd "$SCRIPT_DIR"
 
-echo -e "${YELLOW}[1/2] Deteniendo y eliminando contenedores...${RESET}"
+echo -e "${YELLOW}[1/3] Deteniendo y eliminando contenedores...${RESET}"
 sudo docker compose down
 echo -e "${GREEN}      ✔ Contenedores detenidos.${RESET}\n"
 
-echo -e "${YELLOW}[2/2] Estado final:${RESET}"
+echo -e "${YELLOW}[2/3] Borrando datos de InfluxDB (volumen)...${RESET}"
+sudo docker volume rm ipset_influxdb_data 2>/dev/null && \
+    echo -e "${GREEN}      ✔ Volumen eliminado. La próxima sesión arranca con datos limpios.${RESET}\n" || \
+    echo -e "${GREEN}      ✔ El volumen ya no existía (ya estaba limpio).${RESET}\n"
+
+echo -e "${YELLOW}[3/3] Estado final:${RESET}"
 sudo docker compose ps
 
 echo -e "\n${BOLD}${RED}╔═══════════════════════════════════════════════╗${RESET}"

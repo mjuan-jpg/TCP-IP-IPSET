@@ -49,4 +49,4 @@ echo -e "${CYAN}║  Ctrl+C para dejar de ver logs (infra sigue   ║${RESET}"
 echo -e "${CYAN}║  corriendo). Usa ./stop.sh para detenerla.    ║${RESET}"
 echo -e "${BOLD}${CYAN}╚═══════════════════════════════════════════════╝${RESET}\n"
 
-sudo docker compose logs -f --tail=50
+sudo docker compose logs -f --tail=50 simulator

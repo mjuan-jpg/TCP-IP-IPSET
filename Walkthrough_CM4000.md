@@ -46,6 +46,21 @@ El proyecto está compuesto por cinco componentes (archivos) principales que sep
     *   Lee los registros crudos, aplica la operación matemática inversa de los Factores de Escala (decodificación) y los formatea como un Dashboard visual en la terminal.
     *   Opera en un ciclo continuo (Polling) permitiendo observar la fluctuación de la red y reaccionar visualmente a los fallos inyectados remotamente.
 
+### 6. Capa de Adquisición y Almacenamiento (Docker Compose)
+*   **Función:** Proporciona un entorno de monitoreo continuo y base de datos histórica utilizando contenedores.
+*   **Componentes Clave:**
+    *   **Telegraf:** Agente de recolección de datos configurado (`telegraf.conf`) con el plugin `inputs.modbus` adaptado a nuestro mapa de registros. Realiza polling al simulador.
+    *   **InfluxDB v2:** Base de datos de series de tiempo (TSDB) que almacena de forma eficiente la telemetría. Totalmente auto-aprovisionada mediante variables de entorno en el `docker-compose.yml`.
+    *   **Simulador Dockerizado:** El sistema se levanta desde un `Dockerfile` propio, empaquetando el motor y exponiendo sus puertos Modbus y TCP.
+
+### 7. Capa de Visualización y Alertas (Home Assistant)
+*   **Función:** Proporciona un Dashboard web avanzado (Lovelace) y un sistema de automatización para alertas en tiempo real.
+*   **Componentes Clave:**
+    *   **Contenedor Docker:** Home Assistant (`homeassistant/home-assistant:stable`) conectado a la misma red interna que InfluxDB.
+    *   **Integración InfluxDB v2 (`sensor.influxdb`):** Realiza consultas en lenguaje Flux (`queries_flux`) a la base de datos temporal para extraer los últimos valores de Tensión, Corriente, PF, THD y Demanda Máxima.
+    *   **Dashboard (`ui-lovelace.yaml`):** Interfaz gráfica dividida temáticamente en Tiempo Real, Históricos y Calidad de Energía.
+    *   **Motor de Alertas (`automations.yaml`):** Lógica basada en normativas internacionales (ej. EN 50160) que dispara notificaciones ante superación de umbrales en dos niveles: Advertencia (Pre-Alarma) y Peligro Crítico.
+
 ---
 
 ## 💡 Flujo de Operación Típico (Pipeline)

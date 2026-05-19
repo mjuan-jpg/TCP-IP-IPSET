@@ -1,0 +1,64 @@
+title: CM4000 Power Quality Monitor
+views:
+  - title: Tiempo Real
+    icon: mdi:flash
+    cards:
+      - type: entities
+        title: Mediciones Principales
+        entities:
+          - entity: sensor.cm4000_voltage_phase_a
+            name: Tensión L-N (Fase A)
+            icon: mdi:sine-wave
+          - entity: sensor.cm4000_current_phase_a
+            name: Corriente (Fase A)
+            icon: mdi:current-ac
+          - entity: sensor.cm4000_power_factor
+            name: Factor de Potencia Total
+            icon: mdi:angle-acute
+          - entity: sensor.cm4000_max_demand_kw
+            name: Demanda Activa Total
+            icon: mdi:transmission-tower
+
+  - title: Histórico
+    icon: mdi:chart-line
+    cards:
+      - type: history-graph
+        title: Tendencia de Tensión
+        hours_to_show: 1
+        entities:
+          - entity: sensor.cm4000_voltage_phase_a
+            name: Tensión L-N
+      - type: history-graph
+        title: Tendencia de Corriente
+        hours_to_show: 1
+        entities:
+          - entity: sensor.cm4000_current_phase_a
+            name: Corriente
+      - type: history-graph
+        title: Demanda Activa
+        hours_to_show: 1
+        entities:
+          - entity: sensor.cm4000_max_demand_kw
+            name: kW
+
+  - title: Calidad de Energía
+    icon: mdi:chart-bell-curve
+    cards:
+      - type: gauge
+        entity: sensor.cm4000_thd_voltage_phase_a
+        name: THD Voltaje
+        min: 0
+        max: 15
+        severity:
+          green: 0
+          yellow: 5
+          red: 8
+      - type: gauge
+        entity: sensor.cm4000_thd_current_phase_a
+        name: THD Corriente
+        min: 0
+        max: 40
+        severity:
+          green: 0
+          yellow: 15
+          red: 25

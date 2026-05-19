@@ -129,3 +129,35 @@ Dentro de la consola de Inyección de Fallas (`CM4000>`), también puedes usar c
 * `help`: Imprime la ayuda rápida con todos los comandos.
 * `shutdown`: Detiene **completamente** la simulación y apaga el Servidor remoto.
 * `quit` / `exit`: Únicamente cierra la conexión TCP de control local (el simulador sigue corriendo).
+
+---
+
+## 6. Ejecución con Docker Compose (Infraestructura Completa)
+
+Si deseas levantar el simulador junto a la capa de adquisición (Telegraf) y almacenamiento (InfluxDB) para ver gráficas persistentes:
+
+1. Asegúrate de tener instalado `docker` y el plugin `docker-compose`.
+2. En la raíz del proyecto, ejecuta el siguiente comando para levantar la infraestructura en segundo plano:
+   ```bash
+   docker compose up -d
+   ```
+3. Esto construirá la imagen del simulador y levantará los 3 contenedores (`cm4000_simulator`, `influxdb_v2`, `telegraf`).
+4. Ingresa a la interfaz de InfluxDB abriendo tu navegador web en `http://localhost:8086`.
+5. Usa las credenciales aprovisionadas por defecto:
+   * **Usuario:** `admin`
+   * **Contraseña:** `adminpassword`
+6. Ve a la sección **Data Explorer**, selecciona el bucket `cm4000_data` y podrás ver todas las métricas de tensión, corriente, potencia y THD almacenándose continuamente. Utiliza el cliente de control (`cm4000_control.py`) para inyectar fallos y visualiza su impacto histórico en las gráficas de InfluxDB.
+
+---
+
+## 7. Dashboard de Monitoreo y Alertas (Home Assistant)
+
+Se ha integrado **Home Assistant** para proveer un dashboard web y un potente motor de automatización de alertas basado en estándares de calidad de energía (como EN 50160).
+
+1. Tras levantar el sistema con `sudo docker compose up -d` (o usando el script `install_dependencias_dashboard.sh`), abre tu navegador web en `http://localhost:8123`.
+2. Sigue el asistente inicial de Home Assistant para crear un usuario y contraseña (solo la primera vez).
+3. Podrás ver el **CM4000 Power Quality Monitor** configurado en el panel principal con los datos extraídos de InfluxDB.
+4. **Sistema de Alertas:** Si inyectas fallas con `cm4000_control.py` que violen los límites operativos, se generarán alertas en el menú de notificaciones (icono de campana abajo a la izquierda):
+   * **Advertencias (Pre-Alarmas):** Tensión > ±5%, Corriente > 100%, PF < 0.95, THD V > 5%.
+   * **Críticas (Alarmas):** Tensión > ±10%, Corriente > 110%, PF < 0.90, THD V > 8%.
+   * **Comunicaciones:** Se alertará si el medidor deja de enviar datos por más de 5s (Warn) o 15s (Crítico).

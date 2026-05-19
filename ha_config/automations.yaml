@@ -1,0 +1,204 @@
+- id: 'voltage_warn'
+  alias: "Alerta: Tensión en Rango de Advertencia"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_voltage_phase_a
+      above: 8001
+    - platform: numeric_state
+      entity_id: sensor.cm4000_voltage_phase_a
+      below: 7239
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.cm4000_voltage_phase_a
+      below: 8382
+    - condition: numeric_state
+      entity_id: sensor.cm4000_voltage_phase_a
+      above: 6858
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "⚠️ PRE-ALARMA: Tensión"
+        message: "La tensión de la Fase A está fuera del +/- 5% nominal (7620V). Valor actual: {{ states('sensor.cm4000_voltage_phase_a') }} V"
+
+- id: 'voltage_crit'
+  alias: "Alerta: Tensión CRÍTICA"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_voltage_phase_a
+      above: 8382
+    - platform: numeric_state
+      entity_id: sensor.cm4000_voltage_phase_a
+      below: 6858
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "🚨 ALARMA CRÍTICA: Tensión"
+        message: "La tensión de la Fase A excedió el +/- 10% (EN 50160). Valor actual: {{ states('sensor.cm4000_voltage_phase_a') }} V"
+
+- id: 'current_warn'
+  alias: "Alerta: Sobrecorriente Advertencia"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_current_phase_a
+      above: 100
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.cm4000_current_phase_a
+      below: 110
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "⚠️ PRE-ALARMA: Sobrecorriente"
+        message: "Corriente > 100% In. Valor actual: {{ states('sensor.cm4000_current_phase_a') }} A"
+
+- id: 'current_crit'
+  alias: "Alerta: Sobrecorriente CRÍTICA"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_current_phase_a
+      above: 110
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "🚨 ALARMA CRÍTICA: Sobrecorriente"
+        message: "Corriente > 110% In (Protección térmica inminente). Valor actual: {{ states('sensor.cm4000_current_phase_a') }} A"
+
+- id: 'pf_warn'
+  alias: "Alerta: FP Advertencia"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_power_factor
+      below: 0.95
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.cm4000_power_factor
+      above: 0.90
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "⚠️ PRE-ALARMA: Factor de Potencia"
+        message: "El FP cayó por debajo de 0.95. Valor actual: {{ states('sensor.cm4000_power_factor') }}"
+
+- id: 'pf_crit'
+  alias: "Alerta: FP CRÍTICO"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_power_factor
+      below: 0.90
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "🚨 ALARMA CRÍTICA: Factor de Potencia"
+        message: "Riesgo de Penalizaciones. FP por debajo de 0.90. Valor actual: {{ states('sensor.cm4000_power_factor') }}"
+
+- id: 'thdv_warn'
+  alias: "Alerta: THD Tensión Advertencia"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_thd_voltage_phase_a
+      above: 5
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.cm4000_thd_voltage_phase_a
+      below: 8
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "⚠️ PRE-ALARMA: THD Tensión"
+        message: "THD de Tensión superior al 5%. Valor actual: {{ states('sensor.cm4000_thd_voltage_phase_a') }} %"
+
+- id: 'thdv_crit'
+  alias: "Alerta: THD Tensión CRÍTICO"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_thd_voltage_phase_a
+      above: 8
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "🚨 ALARMA CRÍTICA: THD Tensión"
+        message: "THD de Tensión superior al 8%. Riesgo para equipos sensibles. Valor actual: {{ states('sensor.cm4000_thd_voltage_phase_a') }} %"
+
+- id: 'thdi_warn'
+  alias: "Alerta: THD Corriente Advertencia"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_thd_current_phase_a
+      above: 15
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.cm4000_thd_current_phase_a
+      below: 25
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "⚠️ PRE-ALARMA: THD Corriente"
+        message: "THD de Corriente superior al 15%. Valor actual: {{ states('sensor.cm4000_thd_current_phase_a') }} %"
+
+- id: 'thdi_crit'
+  alias: "Alerta: THD Corriente CRÍTICO"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_thd_current_phase_a
+      above: 25
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "🚨 ALARMA CRÍTICA: THD Corriente"
+        message: "THD de Corriente superior al 25%. Riesgo de calentamiento del neutro. Valor actual: {{ states('sensor.cm4000_thd_current_phase_a') }} %"
+
+- id: 'demand_warn'
+  alias: "Alerta: Demanda Advertencia"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_max_demand_kw
+      above: 1800
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.cm4000_max_demand_kw
+      below: 2000
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "⚠️ PRE-ALARMA: Demanda de Potencia"
+        message: "Demanda > 90% (1800kW) de la potencia contratada. Valor: {{ states('sensor.cm4000_max_demand_kw') }} kW"
+
+- id: 'demand_crit'
+  alias: "Alerta: Demanda CRÍTICA"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.cm4000_max_demand_kw
+      above: 2000
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "🚨 ALARMA CRÍTICA: Demanda de Potencia"
+        message: "Demanda > 100% (2000kW). Riesgo de recargos tarifarios inminentes. Valor: {{ states('sensor.cm4000_max_demand_kw') }} kW"
+
+- id: 'comms_warn'
+  alias: "Alerta: Pérdida Comunicación Advertencia"
+  trigger:
+    - platform: state
+      entity_id: sensor.cm4000_voltage_phase_a
+      to: 'unavailable'
+      for:
+        seconds: 5
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "⚠️ PRE-ALARMA: Comunicación"
+        message: "No hay respuesta del Medidor (1-2 reintentos fallidos en los últimos 5s)."
+
+- id: 'comms_crit'
+  alias: "Alerta: Pérdida Comunicación CRÍTICA"
+  trigger:
+    - platform: state
+      entity_id: sensor.cm4000_voltage_phase_a
+      to: 'unavailable'
+      for:
+        seconds: 15
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "🚨 ALARMA CRÍTICA: Comunicación Pérdida"
+        message: "Pérdida de conexión severa con el CM4000 (> 15 segundos sin datos o > 3 fallos)."

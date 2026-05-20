@@ -25,14 +25,14 @@ services:
       - influxdb_data:/var/lib/influxdb2
     restart: unless-stopped
 
-  telegraf:
-    image: telegraf:1.28
-    container_name: telegraf
+  adquisidor:
+    build: 
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: cm4000_adquisidor
     depends_on:
       - simulator
       - influxdb
-    volumes:
-      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
     restart: unless-stopped
 
 

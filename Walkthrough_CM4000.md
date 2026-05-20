@@ -39,27 +39,19 @@ El proyecto está compuesto por cinco componentes (archivos) principales que sep
     *   `snapshot` (para ver las medidas actuales en el simulador)
     *   `status` (para ver los eventos o fallas activas).
 
-### 5. `cm4000_client.py` (El Cliente/Dashboard Modbus)
-*   **Función:** Actúa como el SCADA, PLC o HMI final que lee los datos.
+### 5. `cm4000_client.py` (Nodo de Adquisición y Alertas)
+*   **Función:** Reemplaza a Telegraf, actuando como el cerebro de adquisición de datos (SCADA/HMI) y motor de alertas.
 *   **Características Clave:** 
-    *   Se conecta estrictamente mediante el estándar **Modbus-TCP** (al Puerto 5020).
-    *   Lee los registros crudos, aplica la operación matemática inversa de los Factores de Escala (decodificación) y los formatea como un Dashboard visual en la terminal.
-    *   Opera en un ciclo continuo (Polling) permitiendo observar la fluctuación de la red y reaccionar visualmente a los fallos inyectados remotamente.
+    *   **Polling Estricto:** Lee los registros Modbus crudos cada 1.0 segundos y decodifica la información.
+    *   **Promedios y Base de Datos:** Mantiene buffers en memoria y cada 15 minutos exactos inserta promedios matemáticos (y demandas máximas) en InfluxDB.
+    *   **Alarmas en Tiempo Real:** Evalúa en cada segundo si se rompen límites operativos (Tensión fuera de rango, Sobrecorrientes, Bajo PF) implementando una máquina de estados con histéresis y notificando eventos asíncronamente.
 
-### 6. Capa de Adquisición y Almacenamiento (Docker Compose)
-*   **Función:** Proporciona un entorno de monitoreo continuo y base de datos histórica utilizando contenedores.
+### 6. Capa de Almacenamiento (Docker Compose)
+*   **Función:** Proporciona un entorno de ejecución continuo y base de datos histórica utilizando contenedores.
 *   **Componentes Clave:**
-    *   **Telegraf:** Agente de recolección de datos configurado (`telegraf.conf`) con el plugin `inputs.modbus` adaptado a nuestro mapa de registros. Realiza polling al simulador.
-    *   **InfluxDB v2:** Base de datos de series de tiempo (TSDB) que almacena de forma eficiente la telemetría. Totalmente auto-aprovisionada mediante variables de entorno en el `docker-compose.yml`.
+    *   **Adquisidor Nativo:** El script `cm4000_client.py` se levanta en su propio contenedor (construido vía `Dockerfile.client`) asegurando que el proceso de lectura no dependa de factores externos.
+    *   **InfluxDB v2:** Base de datos de series de tiempo (TSDB) que almacena de forma eficiente la telemetría promediada cada 15 minutos y los eventos/alarmas en tiempo real.
     *   **Simulador Dockerizado:** El sistema se levanta desde un `Dockerfile` propio, empaquetando el motor y exponiendo sus puertos Modbus y TCP.
-
-### 7. Capa de Visualización y Alertas (Home Assistant)
-*   **Función:** Proporciona un Dashboard web avanzado (Lovelace) y un sistema de automatización para alertas en tiempo real.
-*   **Componentes Clave:**
-    *   **Contenedor Docker:** Home Assistant (`homeassistant/home-assistant:stable`) conectado a la misma red interna que InfluxDB.
-    *   **Integración InfluxDB v2 (`sensor.influxdb`):** Realiza consultas en lenguaje Flux (`queries_flux`) a la base de datos temporal para extraer los últimos valores de Tensión, Corriente, PF, THD y Demanda Máxima.
-    *   **Dashboard (`ui-lovelace.yaml`):** Interfaz gráfica dividida temáticamente en Tiempo Real, Históricos y Calidad de Energía.
-    *   **Motor de Alertas (`automations.yaml`):** Lógica basada en normativas internacionales (ej. EN 50160) que dispara notificaciones ante superación de umbrales en dos niveles: Advertencia (Pre-Alarma) y Peligro Crítico.
 
 ---
 
@@ -68,10 +60,9 @@ El proyecto está compuesto por cinco componentes (archivos) principales que sep
 Para entender cómo operan todas las piezas juntas:
 
 1.  **Levantar el Sistema (Fondo):** Se ejecuta `python cm4000_server.py`. Esto activa la simulación matemática de la red (`Engine`) y abre los puertos `5020` (Modbus) y `5021` (Control de Fallas).
-2.  **Monitorear Datos (SCADA):** En una segunda terminal, el operador inicia `python cm4000_client.py --loop`, el cual se conecta vía Modbus y refresca los parámetros eléctricos en la pantalla.
-3.  **Inyectar Fallas Remotas:** En una tercera terminal, el ingeniero usa `python cm4000_control.py` conectándose al puerto 5021. Al emitir un comando como `sag a 30 10` (caída de tensión en la fase A del 30% por 10 seg):
+2.  **Adquisición de Datos (Adquisidor):** El contenedor `adquisidor` (`cm4000_client.py`) se conecta vía Modbus, consulta registros cada 1s y alimenta sus buffers para la base de datos InfluxDB.
+3.  **Inyectar Fallas Remotas:** En una terminal independiente, el ingeniero usa `python cm4000_control.py` conectándose al puerto 5021. Al emitir un comando como `sag a 30 10`:
     *   El comando viaja por TCP al `Server`.
     *   El `Server` lo inserta como evento activo en el `Engine`.
-    *   El `Engine` altera el voltaje L-N, potencias y corrientes afectados.
-    *   El *Thread Actualizador* reescribe estos nuevos valores numéricos en la memoria compartida (SimDevice).
-    *   El Cliente SCADA (`cm4000_client.py`), en su próximo ciclo de lectura Modbus, obtiene y muestra en pantalla la caída de tensión reflejada.
+    *   El `Engine` altera el voltaje L-N, potencias y corrientes.
+    *   El Cliente Adquisidor (`cm4000_client.py`) detecta la caída inmediatamente, registra la alarma de "Tensión Fuera de Rango" en InfluxDB y puede disparar notificaciones asíncronas.

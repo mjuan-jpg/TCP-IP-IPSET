@@ -18,10 +18,10 @@ from typing import Optional, Dict
 
 @dataclass
 class BaselineProfile:
-    """Nominal electrical parameters for a 3-phase industrial network."""
-    v_ln: float = 220.0       # Phase-Neutral voltage (V)
-    v_ll: float = 380.0       # Phase-Phase voltage (V)
-    current: float = 150.0    # Phase current (A)
+    """Nominal electrical parameters for a 3-phase industrial network (13.2 kV MT)."""
+    v_ln: float = 7621.02     # Phase-Neutral voltage (V) -> 13200 / sqrt(3)
+    v_ll: float = 13200.0     # Phase-Phase voltage (V)
+    current: float = 100.0    # Phase current (A)
     pf: float = 0.92          # Power factor (lagging)
     freq: float = 50.0        # Frequency (Hz)
     thd_v: float = 2.5        # THD voltage (%)
@@ -169,26 +169,31 @@ class DataEngine:
         return max(0.0, min(1.0, self._gaussian(pf, 0.8)))
 
     def get_frequency(self) -> float:
-        return self._gaussian(self.profile.freq, 0.02)
+        # Frecuencia estricta entre 49.9 y 50.1 Hz
+        val = self._gaussian(self.profile.freq, 0.05)
+        return max(49.9, min(50.1, val))
 
     def get_thd_v(self, phase: str) -> float:
         base = self.profile.thd_v + self._get_harmonic_event_boost(phase)
-        return max(0, self._gaussian(base, 5.0))
+        # Restricción normativa: THD_v NUNCA debe superar el 5.0% en estado estacionario
+        return max(0.0, min(5.0, self._gaussian(base, 5.0)))
 
     def get_thd_i(self, phase: str) -> float:
         base = self.profile.thd_i + self._get_harmonic_event_boost(phase)
-        return max(0, self._gaussian(base, 8.0))
+        # Restricción: THD_i entre 5% y 20%
+        return max(5.0, min(20.0, self._gaussian(base, 8.0)))
 
     def get_harmonic_v(self, phase: str, order: int) -> float:
-        """Individual voltage harmonic magnitude (% of fundamental)."""
-        # Typical: decreasing with order, odd > even
-        base_pct = max(0.1, (100.0 / (order ** 1.8)) * (self.profile.thd_v / 5.0))
+        """Individual voltage harmonic magnitude (% of fundamental). Priorities: 5, 7, 11, 13"""
+        if order not in [5, 7, 11, 13]: return 0.0
+        base_pct = (100.0 / (order ** 1.8)) * (self.profile.thd_v / 5.0)
         base_pct += self._get_harmonic_event_boost(phase) * (0.5 / order)
         return max(0, self._gaussian(base_pct, 10.0))
 
     def get_harmonic_i(self, phase: str, order: int) -> float:
         """Individual current harmonic magnitude (% of fundamental)."""
-        base_pct = max(0.2, (100.0 / (order ** 1.5)) * (self.profile.thd_i / 8.0))
+        if order not in [5, 7, 11, 13]: return 0.0
+        base_pct = (100.0 / (order ** 1.5)) * (self.profile.thd_i / 8.0)
         base_pct += self._get_harmonic_event_boost(phase) * (1.0 / order)
         return max(0, self._gaussian(base_pct, 12.0))
 
@@ -220,43 +225,51 @@ class DataEngine:
     # ── Full Snapshot ──
 
     def snapshot(self) -> Dict[str, float]:
-        """Generate a complete snapshot of all electrical parameters."""
+        """Generate a complete snapshot enforcing strict MT physical relationships."""
         data = {}
         phases = ['a', 'b', 'c']
 
         # Voltages L-N
         for p in phases:
-            data[f'Vln_{p}'] = self.get_voltage_ln(p)
-        data['Vln_avg'] = sum(data[f'Vln_{p}'] for p in phases) / 3
+            v_ln = self.get_voltage_ln(p)
+            # Acotar voltaje en estado estable (-5% a +5%)
+            if not self.active_events:
+                v_ln = max(self.profile.v_ln * 0.95, min(self.profile.v_ln * 1.05, v_ln))
+            data[f'Vln_{p}'] = v_ln
+        data['Vln_avg'] = sum(data[f'Vln_{p}'] for p in phases) / 3.0
 
-        # Voltages L-L
-        for pair in [('ab', 'Vll_ab'), ('bc', 'Vll_bc'), ('ca', 'Vll_ca')]:
-            data[pair[1]] = self.get_voltage_ll(pair[0])
-        data['Vll_avg'] = sum(data[k] for k in ['Vll_ab', 'Vll_bc', 'Vll_ca']) / 3
+        # Voltages L-L (Relación ideal estricta: VL = √3 * VF)
+        data['Vll_ab'] = data['Vln_a'] * math.sqrt(3)
+        data['Vll_bc'] = data['Vln_b'] * math.sqrt(3)
+        data['Vll_ca'] = data['Vln_c'] * math.sqrt(3)
+        data['Vll_avg'] = sum(data[k] for k in ['Vll_ab', 'Vll_bc', 'Vll_ca']) / 3.0
 
         # Currents
         for p in phases:
             data[f'I_{p}'] = self.get_current(p)
-        data['I_n'] = abs(data['I_a'] - data['I_b'] + data['I_c']) * 0.05
-        data['I_avg'] = sum(data[f'I_{p}'] for p in phases) / 3
+        # Restricción estricta MT Delta: I_n = 0.0A
+        data['I_n'] = 0.0
+        data['I_avg'] = sum(data[f'I_{p}'] for p in phases) / 3.0
 
-        # Power Factor
+        # Power Factor (Rango estricto 0.85 a 1.00 en estado estable)
         for p in phases:
-            data[f'PF_{p}'] = self.get_power_factor(p)
-        data['PF_tot'] = sum(data[f'PF_{p}'] for p in phases) / 3
+            pf = self.get_power_factor(p)
+            if not self.active_events:
+                pf = max(0.85, min(1.00, pf))
+            data[f'PF_{p}'] = pf
+        data['PF_tot'] = sum(data[f'PF_{p}'] for p in phases) / 3.0
 
-        # Power per phase
+        # Potencia Total Trifásica (S = √3 * VL_avg * IL_avg)
+        data['kVA_tot'] = (math.sqrt(3) * data['Vll_avg'] * data['I_avg']) / 1000.0
+        data['kW_tot'] = data['kVA_tot'] * data['PF_tot']
+        # Triángulo cerrado: S = sqrt(P^2 + Q^2) -> Q = sqrt(S^2 - P^2)
+        data['kVAR_tot'] = math.sqrt(abs(data['kVA_tot']**2 - data['kW_tot']**2))
+
+        # Potencia por fase (Distribuida perfectamente para no romper las sumas)
         for p in phases:
-            v = data[f'Vln_{p}']
-            i = data[f'I_{p}']
-            pf = data[f'PF_{p}']
-            data[f'kW_{p}'] = (v * i * pf) / 1000.0
-            data[f'kVAR_{p}'] = (v * i * math.sin(math.acos(pf))) / 1000.0
-            data[f'kVA_{p}'] = (v * i) / 1000.0
-
-        # Totals
-        for prefix in ['kW', 'kVAR', 'kVA']:
-            data[f'{prefix}_tot'] = sum(data[f'{prefix}_{p}'] for p in phases)
+            data[f'kVA_{p}'] = data['kVA_tot'] / 3.0
+            data[f'kW_{p}'] = data['kW_tot'] / 3.0
+            data[f'kVAR_{p}'] = data['kVAR_tot'] / 3.0
 
         # Frequency
         data['Freq'] = self.get_frequency()

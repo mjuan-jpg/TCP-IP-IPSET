@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instalar dependencias
+RUN pip install --no-cache-dir pymodbus influxdb-client
+
+# Copiar archivos fuente
+COPY *.py ./
+
+# Configurar el punto de entrada
+ENTRYPOINT ["python", "-u", "cm4000_client.py"]

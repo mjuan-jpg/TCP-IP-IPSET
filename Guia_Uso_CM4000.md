@@ -17,15 +17,16 @@ python3 cm4000_server.py --port 5020 --control-port 5021
 
 ---
 
-## 2. Monitorear los Datos (El Cliente Dashboard Modbus)
+## 2. Iniciar el Sistema con Docker (Recomendado)
 
-Abre **una segunda terminal**, activa el entorno y corre el cliente de lectura. El parámetro `--loop` activará el modo Dashboard, limpiando la pantalla y actualizándose in situ.
+En lugar de levantar componentes manualmente, se recomienda utilizar el script de inicio automatizado que levanta toda la infraestructura (Simulador, InfluxDB y el Nodo Adquisidor en Python) usando Docker Compose:
 
 ```bash
 cd /home/maximo/IPSET
-source .venv/bin/activate
-python3 cm4000_client.py --port 5020 --loop --interval 2
+./start.sh
 ```
+
+El script `./start.sh` compilará las imágenes, iniciará los contenedores en segundo plano y abrirá automáticamente InfluxDB en tu navegador, además de mostrarte los logs en vivo del simulador y del nodo de adquisición.
 
 ---
 
@@ -132,32 +133,16 @@ Dentro de la consola de Inyección de Fallas (`CM4000>`), también puedes usar c
 
 ---
 
-## 6. Ejecución con Docker Compose (Infraestructura Completa)
+## 6. Visualización y Persistencia de Datos (InfluxDB)
 
-Si deseas levantar el simulador junto a la capa de adquisición (Telegraf) y almacenamiento (InfluxDB) para ver gráficas persistentes:
+El nodo adquisidor `cm4000_client.py` consolida los datos recolectados y los guarda directamente en la base de datos InfluxDB de la siguiente manera:
+* **Cada 15 minutos:** Se guarda un bloque masivo con los promedios de tensión, corriente, potencia y THD acumulados.
+* **Tiempo Real:** Ante anomalías extremas inyectadas por el control remoto, el adquisidor detectará la falla en menos de 1 segundo y generará un evento de alarma inmediatamente en la base de datos.
 
-1. Asegúrate de tener instalado `docker` y el plugin `docker-compose`.
-2. En la raíz del proyecto, ejecuta el siguiente comando para levantar la infraestructura en segundo plano:
-   ```bash
-   docker compose up -d
-   ```
-3. Esto construirá la imagen del simulador y levantará los 3 contenedores (`cm4000_simulator`, `influxdb_v2`, `telegraf`).
-4. Ingresa a la interfaz de InfluxDB abriendo tu navegador web en `http://localhost:8086`.
-5. Usa las credenciales aprovisionadas por defecto:
+Para visualizar estos datos:
+1. Asegúrate de haber levantado el sistema con `./start.sh` (o `docker compose up -d`).
+2. Ingresa a la interfaz de InfluxDB en `http://localhost:8086`.
+3. Usa las credenciales por defecto:
    * **Usuario:** `admin`
    * **Contraseña:** `adminpassword`
-6. Ve a la sección **Data Explorer**, selecciona el bucket `cm4000_data` y podrás ver todas las métricas de tensión, corriente, potencia y THD almacenándose continuamente. Utiliza el cliente de control (`cm4000_control.py`) para inyectar fallos y visualiza su impacto histórico en las gráficas de InfluxDB.
-
----
-
-## 7. Dashboard de Monitoreo y Alertas (Home Assistant)
-
-Se ha integrado **Home Assistant** para proveer un dashboard web y un potente motor de automatización de alertas basado en estándares de calidad de energía (como EN 50160).
-
-1. Tras levantar el sistema con `sudo docker compose up -d` (o usando el script `install_dependencias_dashboard.sh`), abre tu navegador web en `http://localhost:8123`.
-2. Sigue el asistente inicial de Home Assistant para crear un usuario y contraseña (solo la primera vez).
-3. Podrás ver el **CM4000 Power Quality Monitor** configurado en el panel principal con los datos extraídos de InfluxDB.
-4. **Sistema de Alertas:** Si inyectas fallas con `cm4000_control.py` que violen los límites operativos, se generarán alertas en el menú de notificaciones (icono de campana abajo a la izquierda):
-   * **Advertencias (Pre-Alarmas):** Tensión > ±5%, Corriente > 100%, PF < 0.95, THD V > 5%.
-   * **Críticas (Alarmas):** Tensión > ±10%, Corriente > 110%, PF < 0.90, THD V > 8%.
-   * **Comunicaciones:** Se alertará si el medidor deja de enviar datos por más de 5s (Warn) o 15s (Crítico).
+4. Ve a la sección **Data Explorer**, selecciona el bucket `cm4000_data` y podrás navegar por las variables `mediciones_electricas` (histórico) o `eventos_alarmas` (fallas en tiempo real detectadas por el adquisidor).

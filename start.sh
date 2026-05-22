@@ -12,6 +12,7 @@ CYAN="\033[1;36m"
 RESET="\033[0m"
 
 INFLUX_URL="http://localhost:8086"
+GRAFANA_URL="http://localhost:3000"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -19,11 +20,11 @@ echo -e "\n${BOLD}${CYAN}╔═════════════════�
 echo -e "${BOLD}${CYAN}║     CM4000 - Iniciando Infraestructura        ║${RESET}"
 echo -e "${BOLD}${CYAN}╚═══════════════════════════════════════════════╝${RESET}\n"
 
-# ── 1. Levantar contenedores ──────────────────────────────────
-echo -e "${YELLOW}[1/3] Levantando contenedores Docker...${RESET}"
+# ── 1. Levantar infraestructura base ──────────────────────────
+echo -e "${YELLOW}[1/3] Levantando base de infraestructura (simulador e influxdb)...${RESET}"
 cd "$SCRIPT_DIR"
-sudo docker compose up -d --build
-echo -e "${GREEN}      ✔ Contenedores en marcha.${RESET}\n"
+docker compose up -d --build simulator influxdb
+echo -e "${GREEN}      ✔ Contenedores base en marcha.${RESET}\n"
 
 # ── 2. Esperar a que InfluxDB esté listo ─────────────────────
 echo -e "${YELLOW}[2/3] Esperando que InfluxDB esté disponible...${RESET}"
@@ -33,20 +34,27 @@ until curl -s "$INFLUX_URL/health" | grep -q '"status":"pass"'; do
 done
 echo -e "${GREEN}      ✔ InfluxDB listo en ${INFLUX_URL}${RESET}\n"
 
+# ── 2.5. Levantar adquisidor y Grafana ──────────────────────────
+echo -e "${YELLOW}[2.5] Levantando adquisidor y Grafana...${RESET}"
+docker compose up -d --build adquisidor grafana
+echo -e "${GREEN}      ✔ Adquisidor y Grafana en marcha.${RESET}\n"
+
 # ── 3. Abrir navegador ────────────────────────────────────────
-echo -e "${YELLOW}[3/3] Abriendo InfluxDB en el navegador...${RESET}"
+echo -e "${YELLOW}[3/3] Abriendo InfluxDB y Grafana en el navegador...${RESET}"
 sleep 1
 xdg-open "$INFLUX_URL" 2>/dev/null || true
-echo -e "${GREEN}      ✔ Navegador lanzado.${RESET}\n"
+xdg-open "$GRAFANA_URL" 2>/dev/null || true
+echo -e "${GREEN}      ✔ Navegadores lanzados.${RESET}\n"
 
 # ── Log en tiempo real ────────────────────────────────────────
 echo -e "${BOLD}${CYAN}╔═══════════════════════════════════════════════╗${RESET}"
 echo -e "${BOLD}${CYAN}║   Infraestructura ACTIVA - Log en tiempo real  ║${RESET}"
 echo -e "${BOLD}${CYAN}╠═══════════════════════════════════════════════╣${RESET}"
 echo -e "${CYAN}║  InfluxDB:  ${INFLUX_URL}                  ${RESET}"
+echo -e "${CYAN}║  Grafana:   ${GRAFANA_URL}                   ${RESET}"
 echo -e "${BOLD}${CYAN}╠═══════════════════════════════════════════════╣${RESET}"
 echo -e "${CYAN}║  Ctrl+C para dejar de ver logs (infra sigue   ║${RESET}"
 echo -e "${CYAN}║  corriendo). Usa ./stop.sh para detenerla.    ║${RESET}"
 echo -e "${BOLD}${CYAN}╚═══════════════════════════════════════════════╝${RESET}\n"
 
-sudo docker compose logs -f --tail=50 simulator adquisidor
+docker compose logs -f --tail=50 simulator adquisidor

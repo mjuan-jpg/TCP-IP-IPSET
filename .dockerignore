@@ -1,0 +1,7 @@
+# Excluir datos persistentes y directorios pesados del contexto de Docker
+grafana_data/
+.venv/
+__pycache__/
+.git/
+*.md
+repomix-output.md

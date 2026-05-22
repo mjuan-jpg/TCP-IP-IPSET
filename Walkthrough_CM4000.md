@@ -40,18 +40,22 @@ El proyecto está compuesto por cinco componentes (archivos) principales que sep
     *   `status` (para ver los eventos o fallas activas).
 
 ### 5. `cm4000_client.py` (Nodo de Adquisición y Alertas)
-*   **Función:** Reemplaza a Telegraf, actuando como el cerebro de adquisición de datos (SCADA/HMI) y motor de alertas.
+*   **Función:** Reemplaza a Telegraf, actuando como el cerebro de adquisición de datos (SCADA/HMI) y motor de alertas con persistencia optimizada.
 *   **Características Clave:** 
     *   **Polling Estricto:** Lee los registros Modbus crudos cada 1.0 segundos y decodifica la información.
-    *   **Promedios y Base de Datos:** Mantiene buffers en memoria y cada 15 minutos exactos inserta promedios matemáticos (y demandas máximas) en InfluxDB.
-    *   **Alarmas en Tiempo Real:** Evalúa en cada segundo si se rompen límites operativos (Tensión fuera de rango, Sobrecorrientes, Bajo PF) implementando una máquina de estados con histéresis y notificando eventos asíncronamente.
+    *   **Estrategia de Doble Bucket (Tiempo Real vs Histórico):**
+        *   **Bucket de Tiempo Real (`cm4000_realtime`):** Recibe cada 1.0 segundo todas las variables analógicas instantáneas (ej. Freq, corrientes, tensiones, potencias activas/reactivas totales) mapeadas al measurement `mediciones_realtime`. Se excluyen explícitamente los acumuladores de energía codificados en `mod10k` (como `kWh_del` o `kVARh_del`) para evitar redundancia y desperdicio de almacenamiento. Este bucket cuenta con una política de retención corta de 1 hora (el mínimo admitido por InfluxDB v2) para auto-limpiar los datos de alta frecuencia.
+        *   **Bucket Histórico (`cm4000_data`):** Almacena con retención infinita los consolidados de 15 minutos en el measurement `mediciones_electricas` (promediados matemáticamente) y los eventos en `eventos_alarmas`.
+    *   **Alarmas en Tiempo Real:** Evalúa en cada segundo si se rompen límites operativos (Tensión fuera de rango, Sobrecorrientes, Bajo PF, armónicos) implementando una máquina de estados con histéresis y persistiendo los eventos en el bucket histórico.
 
-### 6. Capa de Almacenamiento (Docker Compose)
-*   **Función:** Proporciona un entorno de ejecución continuo y base de datos histórica utilizando contenedores.
+### 6. Capa de Almacenamiento y Visualización (Docker Compose)
+*   **Función:** Proporciona un entorno de ejecución continuo, base de datos de series temporales y visualización de paneles de control.
 *   **Componentes Clave:**
     *   **Adquisidor Nativo:** El script `cm4000_client.py` se levanta en su propio contenedor (construido vía `Dockerfile.client`) asegurando que el proceso de lectura no dependa de factores externos.
-    *   **InfluxDB v2:** Base de datos de series de tiempo (TSDB) que almacena de forma eficiente la telemetría promediada cada 15 minutos y los eventos/alarmas en tiempo real.
+    *   **InfluxDB v2:** Base de datos de series de tiempo (TSDB). Al inicializarse, crea el bucket histórico `cm4000_data` de forma nativa, y ejecuta un script de inicialización (`init-influxdb.sh` montado en `/docker-entrypoint-initdb.d/`) para aprovisionar automáticamente el segundo bucket `cm4000_realtime` con una política de retención de 1h.
+    *   **Grafana:** Servidor de visualización expuesto en el puerto `3000:3000`. Carga automáticamente la conexión con InfluxDB mediante Flux a través del archivo de aprovisionamiento `provisioning/datasources/datasource.yml`. Adicionalmente, cuenta con el inicio de sesión anónimo con rol de Administrador (`GF_AUTH_ANONYMOUS_ENABLED=true` y `GF_AUTH_ANONYMOUS_ORG_ROLE=Admin`) para facilitar el diseño inmediato de tableros sin autenticación previa.
     *   **Simulador Dockerizado:** El sistema se levanta desde un `Dockerfile` propio, empaquetando el motor y exponiendo sus puertos Modbus y TCP.
+    *   **Orquestación en `start.sh`:** Para evitar condiciones de carrera en el arranque, `start.sh` levanta primero el simulador y la base de datos, ejecuta un bucle de consulta (`polling loop`) hasta recibir `"status":"pass"` de InfluxDB, y solo entonces arranca el adquisidor y Grafana.
 
 ---
 

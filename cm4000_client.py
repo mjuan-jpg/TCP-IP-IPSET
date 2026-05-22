@@ -14,6 +14,7 @@ import time
 import threading
 import logging
 import os
+import math
 from datetime import datetime
 from typing import Dict, List, Any
 
@@ -41,7 +42,7 @@ INFLUX_ORG = os.environ.get("INFLUX_ORG", "ipset")
 INFLUX_BUCKET = os.environ.get("INFLUX_BUCKET", "cm4000_data")
 
 # Parámetros de Agrupación
-AVERAGE_WINDOW_SEC = 10  # 10 Segundos (Para pruebas)
+AVERAGE_WINDOW_SEC = 900  # 15 Minutos (10 seg para pruebas)
 
 # ─────────────────────────────────────────────────────────────
 # Logging
@@ -79,6 +80,10 @@ class CM4000Adquisidor:
         self.modbus = ModbusTcpClient(MODBUS_HOST, port=MODBUS_PORT)
         self.influx = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
         self.write_api = self.influx.write_api(write_options=SYNCHRONOUS)
+
+        # Buckets
+        self.bucket_historic = INFLUX_BUCKET
+        self.bucket_realtime = os.environ.get("INFLUX_BUCKET_REALTIME", "cm4000_realtime")
 
         # Buffers de datos para promedios de 15 min
         self.buffers: Dict[str, List[float]] = {r.name: [] for r in REGISTER_MAP}
@@ -196,7 +201,7 @@ class CM4000Adquisidor:
             .tag("estado", status) \
             .field("valor_disparo", value)
         try:
-            self.write_api.write(bucket=INFLUX_BUCKET, record=point)
+            self.write_api.write(bucket=self.bucket_historic, record=point)
         except Exception as e:
             log.error(f"Error guardando evento en Influx: {e}")
 
@@ -235,7 +240,7 @@ class CM4000Adquisidor:
 
         # Bulk Write a InfluxDB
         try:
-            self.write_api.write(bucket=INFLUX_BUCKET, record=point)
+            self.write_api.write(bucket=self.bucket_historic, record=point)
             log.info("💾 Bloque de 15 minutos guardado exitosamente en InfluxDB.")
         except Exception as e:
             log.error(f"Error escribiendo bloque en InfluxDB: {e}")
@@ -265,6 +270,19 @@ class CM4000Adquisidor:
                             self.buffers[reg.name].append(val)
                     
                     samples_count += 1
+
+                    # Escribir mediciones de tiempo real al bucket 'cm4000_realtime' (excluyendo acumuladores mod10k)
+                    realtime_point = Point("mediciones_realtime")
+                    for reg in REGISTER_MAP:
+                        if reg.fmt != 'mod10k':
+                            val = current_data[reg.name]
+                            if not math.isnan(val):
+                                realtime_point.field(reg.name, val)
+                    
+                    try:
+                        self.write_api.write(bucket=self.bucket_realtime, record=realtime_point)
+                    except Exception as e:
+                        log.error(f"❌ Error escribiendo mediciones en tiempo real en InfluxDB: {e}")
 
                     # Si acabamos de recuperar la conexión
                     if self.alarms_state["Falla_Comunicacion"]:

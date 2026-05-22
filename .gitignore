@@ -10,3 +10,6 @@ docker-compose.override.yml
 
 # InfluxDB data
 influxdb_data/
+
+# Grafana data
+grafana_data/

@@ -133,16 +133,79 @@ Dentro de la consola de Inyección de Fallas (`CM4000>`), también puedes usar c
 
 ---
 
-## 6. Visualización y Persistencia de Datos (InfluxDB)
+## 6. Visualización y Persistencia de Datos (Estrategia de Doble Bucket)
 
-El nodo adquisidor `cm4000_client.py` consolida los datos recolectados y los guarda directamente en la base de datos InfluxDB de la siguiente manera:
-* **Cada 15 minutos:** Se guarda un bloque masivo con los promedios de tensión, corriente, potencia y THD acumulados.
-* **Tiempo Real:** Ante anomalías extremas inyectadas por el control remoto, el adquisidor detectará la falla en menos de 1 segundo y generará un evento de alarma inmediatamente en la base de datos.
+El nodo adquisidor `cm4000_client.py` escribe y clasifica los datos en InfluxDB utilizando dos buckets diferenciados para optimizar el rendimiento y la persistencia plana:
 
-Para visualizar estos datos:
-1. Asegúrate de haber levantado el sistema con `./start.sh` (o `docker compose up -d`).
-2. Ingresa a la interfaz de InfluxDB en `http://localhost:8086`.
-3. Usa las credenciales por defecto:
+### A. Bucket Histórico (`cm4000_data`)
+* **Retención:** Infinita.
+* **Propósito:** Almacenar datos consolidados de largo plazo y el registro histórico de alarmas.
+* **Measurements:**
+  * `mediciones_electricas`: Promedios matemáticos reales de todas las variables analógicas calculados cada 15 minutos (o ventana de prueba), junto con los acumuladores de energía (`mod10k`) y la demanda máxima registrada.
+  * `eventos_alarmas`: Transiciones de activación (`ACTIVA`) y normalización (`INACTIVA`) de alarmas en tiempo real evaluadas segundo a segundo con histéresis.
+
+### B. Bucket de Tiempo Real (`cm4000_realtime`)
+* **Retención:** 1 hora (límite mínimo del motor TSM de InfluxDB v2). Los datos se limpian de manera automática.
+* **Propósito:** Almacenar telemetría instantánea de alta resolución (1s) para visualizaciones rápidas y monitoreo instantáneo sin saturar el almacenamiento primario.
+* **Measurements:**
+  * `mediciones_realtime`: Contiene todas las variables analógicas instantáneas leídas segundo a segundo (Freq, tensiones de fase, corrientes de fase, factor de potencia, armónicos y potencias totales).
+  * **Exclusión de energía:** Los acumuladores de energía (`kWh_rec`, `kVARh_rec`, `kWh_del`, `kVARh_del`, `kWh_tot`) están excluidos explícitamente de este bucket para evitar redundancia de datos acumulativos de alta frecuencia.
+
+---
+
+## 7. Acceso a InfluxDB
+
+Para visualizar y graficar estos datos:
+1. Asegúrate de haber levantado el sistema con `./start.sh`.
+2. Ingresa a la interfaz web de InfluxDB en `http://localhost:8086`.
+3. Inicia sesión con las credenciales preconfiguradas:
    * **Usuario:** `admin`
    * **Contraseña:** `adminpassword`
-4. Ve a la sección **Data Explorer**, selecciona el bucket `cm4000_data` y podrás navegar por las variables `mediciones_electricas` (histórico) o `eventos_alarmas` (fallas en tiempo real detectadas por el adquisidor).
+4. Dirígete a la sección **Data Explorer**.
+5. Podrás seleccionar:
+   * El bucket **`cm4000_data`** para consultar el histórico consolidado (`mediciones_electricas`) y la bitácora de fallas (`eventos_alarmas`).
+   * El bucket **`cm4000_realtime`** para graficar las variables instantáneas en vivo segundo a segundo (`mediciones_realtime`).
+
+---
+
+## 8. Visualización de Paneles de Control en Grafana
+
+Con la integración de Grafana en el puerto `3000`, la configuración del DataSource de InfluxDB v2 está completamente automatizada mediante aprovisionamiento en formato Flux.
+
+### Acceso Directo:
+1. Asegúrate de haber levantado el sistema con `./start.sh`.
+2. Ingresa a `http://localhost:3000` en tu navegador.
+3. El sistema te redireccionará automáticamente como Administrador sin pedir credenciales (Anonymous Admin activo).
+
+### Consultas de Ejemplo en Lenguaje Flux:
+
+Para diseñar tus paneles en Grafana, utiliza el DataSource pre-aprovisionado `InfluxDB_v2_Flux`. Aquí tienes los ejemplos de código Flux para estructurar tus consultas:
+
+#### 1. Panel de Tiempo Real (Muestras cada 1 segundo con ventana móvil de 5 minutos):
+Esta consulta obtiene la corriente de fase A (`I_a`) del bucket de alta frecuencia y filtra los últimos 5 minutos actualizándose dinámicamente en tiempo real:
+```flux
+from(bucket: "cm4000_realtime")
+  |> range(start: -5m)
+  |> filter(fn: (r) => r["_measurement"] == "mediciones_realtime")
+  |> filter(fn: (r) => r["_field"] == "I_a")
+  |> keep(columns: ["_time", "_value", "_field"])
+```
+
+#### 2. Panel Histórico (Promedios consolidados de las últimas 24 horas):
+Esta consulta obtiene el promedio de potencia activa total (`kW_tot`) calculado cada 15 minutos en el bucket histórico permanente:
+```flux
+from(bucket: "cm4000_data")
+  |> range(start: -24h)
+  |> filter(fn: (r) => r["_measurement"] == "mediciones_electricas")
+  |> filter(fn: (r) => r["_field"] == "kW_tot")
+  |> keep(columns: ["_time", "_value", "_field"])
+```
+
+#### 3. Histórico de Eventos y Alarmas:
+Para listar los eventos y disparos de alarma del sistema detectados por el adquisidor en el bucket histórico:
+```flux
+from(bucket: "cm4000_data")
+  |> range(start: -24h)
+  |> filter(fn: (r) => r["_measurement"] == "eventos_alarmas")
+  |> keep(columns: ["_time", "_value", "tipo_alarma", "estado"])
+```

@@ -53,9 +53,13 @@ El proyecto está compuesto por cinco componentes (archivos) principales que sep
 *   **Componentes Clave:**
     *   **Adquisidor Nativo:** El script `cm4000_client.py` se levanta en su propio contenedor (construido vía `Dockerfile.client`) asegurando que el proceso de lectura no dependa de factores externos.
     *   **InfluxDB v2:** Base de datos de series de tiempo (TSDB). Al inicializarse, crea el bucket histórico `cm4000_data` de forma nativa, y ejecuta un script de inicialización (`init-influxdb.sh` montado en `/docker-entrypoint-initdb.d/`) para aprovisionar automáticamente el segundo bucket `cm4000_realtime` con una política de retención de 1h.
-    *   **Grafana:** Servidor de visualización expuesto en el puerto `3000:3000`. Carga automáticamente la conexión con InfluxDB mediante Flux a través del archivo de aprovisionamiento `provisioning/datasources/datasource.yml`. Adicionalmente, cuenta con el inicio de sesión anónimo con rol de Administrador (`GF_AUTH_ANONYMOUS_ENABLED=true` y `GF_AUTH_ANONYMOUS_ORG_ROLE=Admin`) para facilitar el diseño inmediato de tableros sin autenticación previa.
+    *   **Grafana:** Servidor de visualización expuesto en el puerto `3000:3000`. Carga automáticamente la conexión con InfluxDB mediante Flux a través del archivo de aprovisionamiento `provisioning/datasources/datasource.yml`. Adicionalmente, cuenta con el inicio de sesión anónimo con rol de Administrador (`GF_AUTH_ANONYMOUS_ENABLED=true` y `GF_AUTH_ANONYMOUS_ORG_ROLE=Admin`) para facilitar el diseño inmediato de tableros. El dashboard se aprovisiona desde `/etc/grafana/provisioning/dashboards/json/dashboard.json` de manera editable (`allowUiUpdates: true`).
     *   **Simulador Dockerizado:** El sistema se levanta desde un `Dockerfile` propio, empaquetando el motor y exponiendo sus puertos Modbus y TCP.
-    *   **Orquestación en `start.sh`:** Para evitar condiciones de carrera en el arranque, `start.sh` levanta primero el simulador y la base de datos, ejecuta un bucle de consulta (`polling loop`) hasta recibir `"status":"pass"` de InfluxDB, y solo entonces arranca el adquisidor y Grafana.
+    *   **Orquestación y Sincronización en `start.sh` y `stop.sh`:**
+        *   **Control de Versiones (Aprovisionamiento):** Para evitar que Grafana ignore los cambios del JSON al persistirse el volumen SQLite, `start.sh` incrementa automáticamente el campo `version` en `dashboard.json` antes de levantar Grafana. Esto engaña al motor de aprovisionamiento de Grafana para que sobrescriba su base de datos con el archivo actualizado.
+        *   **Exportación Automatizada:** Al detener el stack mediante `stop.sh`, se realiza una llamada HTTP directa a la API local de Grafana para exportar la versión activa en memoria y sobreescribir el archivo `dashboard.json` del repositorio, manteniendo los cambios de la UI sincronizados en el código fuente.
+        *   **Orden de Arranque:** Para evitar condiciones de carrera en el arranque, `start.sh` levanta primero el simulador y la base de datos, ejecuta un bucle de consulta (`polling loop`) hasta recibir `"status":"pass"` de InfluxDB, y solo entonces arranca el adquisidor y Grafana.
+
 
 ---
 

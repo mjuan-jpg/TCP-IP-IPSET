@@ -21,7 +21,7 @@ echo -e "${BOLD}${CYAN}║     CM4000 - Iniciando Infraestructura        ║${RE
 echo -e "${BOLD}${CYAN}╚═══════════════════════════════════════════════╝${RESET}\n"
 
 # ── 1. Levantar infraestructura base ──────────────────────────
-echo -e "${YELLOW}[1/3] Levantando base de infraestructura (simulador e influxdb)...${RESET}"
+echo -e "${YELLOW}[1/3] Compilando imágenes y levantando base de infraestructura (simulador e influxdb)...${RESET}"
 cd "$SCRIPT_DIR"
 docker compose up -d --build simulator influxdb
 echo -e "${GREEN}      ✔ Contenedores base en marcha.${RESET}\n"
@@ -34,13 +34,27 @@ until curl -s "$INFLUX_URL/health" | grep -q '"status":"pass"'; do
 done
 echo -e "${GREEN}      ✔ InfluxDB listo en ${INFLUX_URL}${RESET}\n"
 
-# ── 2.5. Levantar adquisidor y Grafana ──────────────────────────
-echo -e "${YELLOW}[2.5] Levantando adquisidor y Grafana...${RESET}"
+# ── 2.5. Incrementar versión del dashboard para forzar aprovisionamiento ────
+echo -e "${YELLOW}[2.5] Incrementando versión del dashboard.json para forzar aprovisionamiento...${RESET}"
+python3 -c "
+import json, os
+path = '$SCRIPT_DIR/provisioning/dashboards/json/dashboard.json'
+with open(path) as f:
+    d = json.load(f)
+d['version'] = d.get('version', 1) + 1
+with open(path, 'w') as f:
+    json.dump(d, f, indent=2, ensure_ascii=False)
+print(f\"      version → {d['version']}\")
+"
+echo -e "${GREEN}      ✔ Versión del dashboard actualizada.${RESET}\n"
+
+# ── 3. Levantar adquisidor y Grafana ──────────────────────────────────────
+echo -e "${YELLOW}[3/4] Compilando imagen del adquisidor y levantando Grafana...${RESET}"
 docker compose up -d --build adquisidor grafana
 echo -e "${GREEN}      ✔ Adquisidor y Grafana en marcha.${RESET}\n"
 
-# ── 3. Abrir navegador ────────────────────────────────────────
-echo -e "${YELLOW}[3/3] Abriendo InfluxDB y Grafana en el navegador...${RESET}"
+# ── 4. Abrir navegador ────────────────────────────────────────
+echo -e "${YELLOW}[4/4] Abriendo InfluxDB y Grafana en el navegador...${RESET}"
 sleep 1
 xdg-open "$INFLUX_URL" 2>/dev/null || true
 xdg-open "$GRAFANA_URL" 2>/dev/null || true

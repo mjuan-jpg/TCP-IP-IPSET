@@ -201,11 +201,38 @@ from(bucket: "cm4000_data")
   |> keep(columns: ["_time", "_value", "_field"])
 ```
 
-#### 3. Histórico de Eventos y Alarmas:
-Para listar los eventos y disparos de alarma del sistema detectados por el adquisidor en el bucket histórico:
+#### 3. Histórico de Eventos y Alarmas (Con colapso de series):
+Para listar los eventos y disparos de alarma del sistema detectados por el adquisidor en el bucket histórico sin fragmentar las columnas por etiquetas, es indispensable utilizar el operador `|> group()` para colapsar todas las series en un formato tabular plano:
 ```flux
 from(bucket: "cm4000_data")
-  |> range(start: -24h)
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
   |> filter(fn: (r) => r["_measurement"] == "eventos_alarmas")
-  |> keep(columns: ["_time", "_value", "tipo_alarma", "estado"])
+  |> filter(fn: (r) => r["_field"] == "valor_disparo")
+  |> keep(columns: ["_time", "tipo_alarma", "estado", "_value"])
+  |> rename(columns: {"_value": "valor_disparo"})
+  |> group()
+  |> sort(columns: ["_time"], desc: true)
 ```
+
+---
+
+## 9. Ciclo de Vida y Persistencia de Dashboards en Grafana
+
+El sistema está configurado para permitir que la interfaz del Dashboard sea editable en caliente, conservando los cambios incluso tras destruir o reconstruir los contenedores Docker.
+
+### A. ¿Cómo realizar y conservar cambios en el Dashboard?
+1. Haz tus cambios visuales o de consultas directamente en la interfaz de Grafana (`http://localhost:3000`).
+2. Haz clic en el botón **Save** en la parte superior derecha de la interfaz y confirma el guardado.
+3. Para apagar el sistema y conservar los cambios, ejecuta siempre el script de parada:
+   ```bash
+   ./stop.sh
+   ```
+   Este script se conectará automáticamente a la API de Grafana antes de apagar los contenedores y exportará la versión guardada en la base de datos al archivo de configuración del repositorio (`provisioning/dashboards/json/dashboard.json`).
+
+### B. ¿Cómo se cargan los cambios al iniciar?
+Al ejecutar el script de inicio:
+```bash
+./start.sh
+```
+El script realiza un paso de pre-arranque automatizado que lee el archivo `dashboard.json`, incrementa su número de versión (`version`) y levanta los servicios. Esto le indica a Grafana que hay una versión más nueva en el disco, obligando a su base de datos interna a sobrescribirse con el archivo actualizado y garantizando que las modificaciones persistidas en el repositorio siempre se vean reflejadas.
+

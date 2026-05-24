@@ -42,7 +42,7 @@ INFLUX_ORG = os.environ.get("INFLUX_ORG", "ipset")
 INFLUX_BUCKET = os.environ.get("INFLUX_BUCKET", "cm4000_data")
 
 # Parámetros de Agrupación
-AVERAGE_WINDOW_SEC = 900  # 15 Minutos (10 seg para pruebas)
+AVERAGE_WINDOW_SEC = 90  # 1 Minuto y 30 segundos
 
 # ─────────────────────────────────────────────────────────────
 # Logging
@@ -211,6 +211,9 @@ class CM4000Adquisidor:
         
         point = Point("mediciones_electricas")
         avg_kw_tot = 0.0
+        avg_v_ab = 13200.0
+        avg_v_bc = 13200.0
+        avg_v_ca = 13200.0
 
         for reg in REGISTER_MAP:
             if reg.fmt == 'mod10k':
@@ -228,9 +231,18 @@ class CM4000Adquisidor:
                     # Guardamos el promedio de kW_tot para chequear la demanda pico
                     if reg.name == "kW_tot":
                         avg_kw_tot = avg_val
+                    elif reg.name == "Vll_ab":
+                        avg_v_ab = avg_val
+                    elif reg.name == "Vll_bc":
+                        avg_v_bc = avg_val
+                    elif reg.name == "Vll_ca":
+                        avg_v_ca = avg_val
                 
                 # Vaciamos el buffer para los siguientes 15 min
                 self.buffers[reg.name].clear()
+
+        # Calcular e inyectar Vll_avg promedio de tensión L-L en el bucket histórico
+        point.field("Vll_avg", (avg_v_ab + avg_v_bc + avg_v_ca) / 3.0)
 
         # Chequeo de actualización de Demanda Máxima según requerimiento 1.c
         if avg_kw_tot > self.peak_demand_kw:
@@ -269,6 +281,12 @@ class CM4000Adquisidor:
                         else:
                             self.buffers[reg.name].append(val)
                     
+                    # Calcular Vll_avg localmente a partir de las tensiones L-L leídas
+                    v_ab = current_data.get("Vll_ab", 13200.0)
+                    v_bc = current_data.get("Vll_bc", 13200.0)
+                    v_ca = current_data.get("Vll_ca", 13200.0)
+                    current_data["Vll_avg"] = (v_ab + v_bc + v_ca) / 3.0
+                    
                     samples_count += 1
 
                     # Escribir mediciones de tiempo real al bucket 'cm4000_realtime' (excluyendo acumuladores mod10k)
@@ -278,6 +296,9 @@ class CM4000Adquisidor:
                             val = current_data[reg.name]
                             if not math.isnan(val):
                                 realtime_point.field(reg.name, val)
+                    
+                    # También inyectamos Vll_avg calculada en el punto de tiempo real
+                    realtime_point.field("Vll_avg", current_data["Vll_avg"])
                     
                     try:
                         self.write_api.write(bucket=self.bucket_realtime, record=realtime_point)

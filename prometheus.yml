@@ -1,0 +1,28 @@
+# ==============================================================
+#  CM4000 - Configuración de Telemetría Prometheus
+#
+#  scrape_interval 15s: balance óptimo entre granularidad
+#  operativa y overhead del host para contenedores industriales.
+# ==============================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+
+  # -- Prometheus se automonitorea --------------------------------
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # -- cAdvisor: telemetría de contenedores del host ---------------
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  # -- InfluxDB: métricas internas de base de datos --
+  - job_name: "influxdb"
+    static_configs:
+      - targets: ["base_datos:8086"]
+

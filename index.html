@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CM4000 — Manual del Operador</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #171a21;
+      --bg-mid:    #1b2838;
+      --card:      #1e2d3d;
+      --card-hi:   #243447;
+      --border:    #2a3f54;
+      --border-hi: #3d6082;
+      --blue:      #66c0f4;
+      --blue-dim:  #2a5a7c;
+      --blue-glow: rgba(102,192,244,0.10);
+      --text:      #c7d5e0;
+      --text-dim:  #8f98a0;
+      --text-hi:   #ffffff;
+      --green:     #4ddb8a;
+      --amber:     #f4b942;
+      --red:       #f44c4c;
+      --sans:      'DM Sans', sans-serif;
+      --mono:      'Space Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.7;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--bg-mid);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 2rem 0;
+    }
+
+    .sidebar-logo {
+      padding: 0 1.5rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .sidebar-logo-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-hi);
+      line-height: 1.3;
+    }
+
+    .sidebar-logo-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 3px;
+    }
+
+    .sidebar-section {
+      padding: 0 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 0 0.5rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.4rem 0.5rem;
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+
+    .sidebar-link:hover,
+    .sidebar-link.active {
+      background: var(--blue-glow);
+      color: var(--blue);
+    }
+
+    .sidebar-num {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--blue-dim);
+      width: 16px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ─── MAIN ─── */
+    .content {
+      flex: 1;
+      max-width: 800px;
+      padding: 3.5rem 3rem 8rem;
+    }
+
+    /* ─── HERO ─── */
+    .doc-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-hi);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .doc-meta {
+      display: flex;
+      gap: 1.5rem;
+      font-size: 13px;
+      color: var(--text-dim);
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3rem;
+      flex-wrap: wrap;
+    }
+
+    .doc-meta span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ─── SECTION ─── */
+    .doc-section {
+      margin-bottom: 3.5rem;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity .5s ease, transform .5s ease;
+    }
+
+    .doc-section.visible { opacity: 1; transform: translateY(0); }
+
+    .section-heading {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-num {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--blue);
+      flex-shrink: 0;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-hi);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.6rem;
+      flex: 1;
+    }
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-hi);
+      margin: 1.75rem 0 0.6rem;
+    }
+
+    p {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.75;
+      margin-bottom: 0.75rem;
+    }
+
+    p strong { color: var(--text); font-weight: 600; }
+
+    /* ─── LISTS ─── */
+    ul, ol {
+      padding-left: 0;
+      margin: 0.5rem 0 1rem;
+      list-style: none;
+    }
+
+    li {
+      font-size: 15px;
+      color: var(--text-dim);
+      padding: 0.35rem 0 0.35rem 1.25rem;
+      position: relative;
+      border-bottom: 1px solid rgba(42,63,84,0.5);
+      line-height: 1.6;
+    }
+
+    li:last-child { border-bottom: none; }
+
+    li::before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: var(--blue);
+      font-weight: 700;
+    }
+
+    li strong { color: var(--text); font-weight: 600; }
+
+    ol { counter-reset: item; }
+    ol li::before {
+      content: counter(item);
+      counter-increment: item;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--blue);
+      font-weight: 700;
+    }
+
+    /* ─── CODE BLOCKS ─── */
+    .codeblock {
+      position: relative;
+      margin: 0.75rem 0;
+    }
+
+    .codeblock-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #161b22;
+      border: 1px solid #1e2830;
+      border-bottom: none;
+      border-radius: 5px 5px 0 0;
+      padding: 0.4rem 0.85rem;
+    }
+
+    .codeblock-lang {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: #4a6a7a;
+      letter-spacing: 0.08em;
+    }
+
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .copy-btn:hover {
+      color: var(--blue);
+      border-color: var(--blue-dim);
+      background: var(--blue-glow);
+    }
+
+    .copy-btn.copied {
+      color: var(--green);
+      border-color: rgba(77,219,138,.4);
+      background: rgba(77,219,138,.07);
+    }
+
+    .copy-btn svg { width: 12px; height: 12px; }
+
+    pre {
+      background: #0d1117;
+      border: 1px solid #1e2830;
+      border-top: none;
+      border-radius: 0 0 5px 5px;
+      padding: 1rem 1.25rem;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.9;
+      overflow-x: auto;
+    }
+
+    .c  { color: #3a5a6a; }
+    .p  { color: var(--green); }
+    .k  { color: var(--text-hi); }
+    .o  { color: var(--text-dim); }
+    .bl { color: var(--blue); }
+    .am { color: var(--amber); }
+
+    /* ─── INLINE CODE ─── */
+    code {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: rgba(102,192,244,0.08);
+      color: var(--blue);
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    /* ─── ALERT ─── */
+    .alert {
+      display: flex;
+      gap: 10px;
+      padding: .75rem 1rem;
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text-dim);
+      margin: 1rem 0;
+    }
+
+    .alert svg { flex-shrink: 0; margin-top: 1px; }
+    .alert-blue  { background: var(--blue-glow);      border-left: 3px solid var(--blue); }
+    .alert-red   { background: rgba(244,76,76,.07);   border-left: 3px solid var(--red); }
+    .alert-green { background: rgba(77,219,138,.07);  border-left: 3px solid var(--green); }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+    /* ─── FAULT TABLE ─── */
+    .fault-table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
+
+    .fault-table th {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .fault-table td {
+      padding: 0.75rem;
+      font-size: 13px;
+      color: var(--text-dim);
+      border-bottom: 1px solid rgba(42,63,84,0.5);
+      vertical-align: middle;
+    }
+
+    .fault-table tr:last-child td { border-bottom: none; }
+    .fault-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .fault-name-cell {
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .fault-cmd-cell {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--blue);
+    }
+
+    /* ─── BUCKET TABLE ─── */
+    .bucket-table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
+
+    .bucket-table th {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .bucket-table td {
+      padding: 0.9rem 0.75rem;
+      font-size: 13px;
+      color: var(--text-dim);
+      border-bottom: 1px solid rgba(42,63,84,0.5);
+      vertical-align: top;
+    }
+
+    .bucket-table tr:last-child td { border-bottom: none; }
+
+    /* ─── TABS ─── */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+
+    .tab {
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: .45rem 1rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      transition: all .2s;
+    }
+
+    .tab.on { color: var(--blue); border-bottom-color: var(--blue); background: rgba(102,192,244,.05); }
+    .panel { display: none; }
+    .panel.on { display: block; }
+
+    /* ─── FLUX BLOCK ─── */
+    .flux-wrap {
+      background: #0d1117;
+      border: 1px solid #1e2830;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 0.75rem;
+    }
+
+    .flux-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #161b22;
+      border-bottom: 1px solid #1e2830;
+      padding: .35rem .75rem;
+    }
+
+    .flux-pre {
+      padding: 1rem 1.25rem;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.9;
+      overflow-x: auto;
+    }
+
+    /* ─── FOOTER ─── */
+    .doc-footer {
+      font-size: 12px;
+      color: var(--text-dim);
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-title">PowerLogic CM4000</div>
+      <div class="sidebar-logo-sub">Manual del Operador</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Contenido</div>
+      <a class="sidebar-link active" href="#s01"><span class="sidebar-num">01</span> Arranque</a>
+      <a class="sidebar-link" href="#s02"><span class="sidebar-num">02</span> Monitoreo</a>
+      <a class="sidebar-link" href="#s03"><span class="sidebar-num">03</span> Inyección de Fallas</a>
+      <a class="sidebar-link" href="#s04"><span class="sidebar-num">04</span> Persistencia</a>
+      <a class="sidebar-link" href="#s05"><span class="sidebar-num">05</span> Apagado Seguro</a>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- HEADER -->
+    <div class="doc-title">Manual del Operador</div>
+    <div class="doc-meta">
+      <span>Schneider Electric CM4000</span>
+      <span>Simulador Modbus-TCP</span>
+      <span>Versión 1.0</span>
+    </div>
+
+    <!-- INTRO -->
+    <section class="doc-section visible" id="s00" style="margin-bottom: 2.5rem;">
+      <div class="section-heading">
+        <h2 style="border-color: transparent; padding-bottom: 0;">¿Qué es este sistema?</h2>
+      </div>
+      <p>
+        El simulador CM4000 replica el comportamiento de un medidor de energía industrial <strong>Schneider Electric PowerLogic</strong> operando en una red de Media Tensión a 13.2 kV. Genera telemetría eléctrica realista (tensiones, corrientes, potencias, armónicos y factor de potencia) a través del protocolo <strong>Modbus-TCP</strong>, que puede ser consumida por cualquier sistema SCADA o HMI.
+      </p>
+      <p>
+        Toda la infraestructura corre en <strong>Docker</strong>: el simulador expone los datos, un nodo adquisidor los escribe en <strong>InfluxDB</strong> y <strong>Grafana</strong> los visualiza en paneles configurables en tiempo real. Adicionalmente, <strong>Prometheus</strong> y <strong>cAdvisor</strong> monitorean la salud y rendimiento de la infraestructura misma.
+      </p>
+      <h3>¿Qué se puede hacer con este simulador?</h3>
+      <ul>
+        <li><strong>Visualizar telemetría en tiempo real</strong> — tensiones, corrientes, potencias, THD y factor de potencia actualizados cada segundo en Grafana</li>
+        <li><strong>Consultar histórico consolidado</strong> — promedios de 15 minutos y acumuladores de energía guardados indefinidamente en InfluxDB</li>
+        <li><strong>Inyectar fallas eléctricas remotamente</strong> — simular apagones, pérdida de fase, huecos de tensión, sobretensiones, sobrecargas, armónicos y bajo PF desde una consola TCP sin interrumpir la adquisición</li>
+        <li><strong>Probar alarmas del SCADA</strong> — el adquisidor evalúa límites segundo a segundo y registra cada activación y normalización de alarma con histéresis</li>
+        <li><strong>Personalizar los paneles</strong> — Grafana permite editar los dashboards en caliente; los cambios se persisten en el repositorio al usar el script de apagado</li>
+      </ul>
+    </section>
+
+    <!-- REQUISITOS -->
+    <section class="doc-section visible" id="s-req" style="margin-bottom: 2.5rem;">
+      <div class="section-heading">
+        <h2 style="border-color: transparent; padding-bottom: 0;">Requisitos Previos</h2>
+      </div>
+      <p>Para ejecutar este simulador se necesita el siguiente software instalado en el sistema:</p>
+      <ul>
+        <li><strong>Docker y Docker Compose</strong> — Para levantar la infraestructura de InfluxDB, Grafana, Prometheus y cAdvisor.</li>
+        <li><strong>Python 3.8+</strong> — Con el entorno virtual configurado (<code>python3 -m venv .venv</code>).</li>
+        <li><strong>Dependencias Python</strong> — Instaladas ejecutando <code>pip install -r requirements.txt</code>.</li>
+      </ul>
+    </section>
+
+    <!-- 01 ARRANQUE -->
+    <section class="doc-section" id="s01">
+      <div class="section-heading">
+        <span class="section-num">01</span>
+        <h2>Arranque de la Infraestructura</h2>
+      </div>
+
+      <p>El método recomendado es usar el script <code>start.sh</code>, que orquesta el arranque de todos los servicios en orden correcto.</p>
+
+      <h3>Método recomendado — Docker</h3>
+      <div class="codeblock">
+        <div class="codeblock-head">
+          <span class="codeblock-lang">bash</span>
+          <button class="copy-btn" onclick="cp(this, 'cd ~/Documentos/tpfinal/TCP-IP-IPSET\n./start.sh')">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Copiar
+          </button>
+        </div>
+        <pre><span class="p">$ </span><span class="k">cd ~/Documentos/tpfinal/TCP-IP-IPSET</span>
+<span class="p">$ </span><span class="k">./start.sh</span></pre>
+      </div>
+
+      <p>El script levanta los servicios en este orden:</p>
+      <ol>
+        <li>Compila las imágenes Docker del simulador y el adquisidor</li>
+        <li>Levanta el simulador Modbus (<code>puerto 5020</code>) y el control TCP (<code>puerto 5021</code>)</li>
+        <li>Levanta InfluxDB y espera hasta recibir <code>status: pass</code> antes de continuar</li>
+        <li>Inicia el adquisidor (<code>cm4000_client.py</code>) y Grafana</li>
+        <li>Abre automáticamente el navegador en <code>http://localhost:3000</code></li>
+      </ol>
+
+      <hr>
+
+      <h3>Método alternativo — Solo Python (sin Docker)</h3>
+      <p>Para pruebas rápidas de protocolo sin levantar la infraestructura completa.</p>
+
+      <div class="codeblock">
+        <div class="codeblock-head">
+          <span class="codeblock-lang">bash</span>
+          <button class="copy-btn" onclick="cp(this, 'source .venv/bin/activate\npython3 cm4000_server.py --port 5020 --control-port 5021')">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Copiar
+          </button>
+        </div>
+        <pre><span class="p">$ </span><span class="k">source .venv/bin/activate</span>
+<span class="p">$ </span><span class="k">python3 cm4000_server.py --port 5020 --control-port 5021</span>
+
+<span class="c"># Para simular 33 kV en vez de 13.2 kV (V_LN = 19050 V):</span>
+<span class="p">$ </span><span class="k">python3 cm4000_server.py --v-nominal 19050</span></pre>
+      </div>
+    </section>
+
+    <!-- 02 MONITOREO -->
+    <section class="doc-section" id="s02">
+      <div class="section-heading">
+        <span class="section-num">02</span>
+        <h2>Interfaces de Monitoreo</h2>
+      </div>
+
+      <p>Una vez que el stack está corriendo, se exponen varias interfaces web:</p>
+      <ul>
+        <li><strong>Grafana</strong> — <code>http://localhost:3000</code> — Paneles de control. Acceso automático como Administrador. Contiene dos paneles: <em>CM4000</em> (datos eléctricos) e <em>Infra Observability</em> (métricas Docker).</li>
+        <li><strong>InfluxDB</strong> — <code>http://localhost:8086</code> — Base de datos de series temporales eléctricas. Usuario <code>admin</code>, pass <code>adminpassword</code>.</li>
+        <li><strong>Prometheus</strong> — <code>http://localhost:9090</code> — Motor de métricas y scraper de la infraestructura.</li>
+      </ul>
+
+      <h3>Visualización de datos</h3>
+      <p>A continuación se muestra cómo se ven los paneles en Grafana con datos reales del simulador:</p>
+
+      <div style="margin-top: 1.5rem;">
+        <img src="img_dashboard_real.png" alt="Dashboard CM4000" style="width: 100%; border-radius: 6px; border: 1px solid var(--border);">
+      </div>
+    </section>
+
+    <!-- 03 FALLAS -->
+    <section class="doc-section" id="s03">
+      <div class="section-heading">
+        <span class="section-num">03</span>
+        <h2>Inyección Remota de Fallas</h2>
+      </div>
+
+      <p>El cliente de control se conecta al puerto TCP 5021 (independiente del Modbus). Puedes ejecutarlo localmente o desde otra máquina en la red agregando el parámetro <code>--host</code>.</p>
+
+      <h3>Conexión al puerto de control</h3>
+
+      <div class="codeblock">
+        <div class="codeblock-head">
+          <span class="codeblock-lang">bash</span>
+          <button class="copy-btn" onclick="cp(this, 'source .venv/bin/activate\npython3 cm4000_control.py --port 5021\n# remota:\npython3 cm4000_control.py --host <IP_SERVIDOR> --port 5021')">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Copiar
+          </button>
+        </div>
+        <pre><span class="p">$ </span><span class="k">source .venv/bin/activate</span>
+
+<span class="c"># Conexión local</span>
+<span class="p">$ </span><span class="k">python3 cm4000_control.py --port 5021</span>
+
+<span class="c"># Conexión remota</span>
+<span class="p">$ </span><span class="k">python3 cm4000_control.py --host &lt;IP_SERVIDOR&gt; --port 5021</span></pre>
+      </div>
+
+      <p>Una vez conectado aparece el prompt <code>CM4000&gt;</code>. La sintaxis general es:</p>
+      <div class="codeblock">
+        <div class="codeblock-head">
+          <span class="codeblock-lang">sintaxis</span>
+        </div>
+        <pre><span class="am">CM4000&gt;</span> <span class="k">&lt;evento&gt; &lt;fase|all&gt; &lt;magnitud&gt; &lt;duración_seg&gt;</span></pre>
+      </div>
+
+      <h3>Comandos de monitoreo interno</h3>
+      <ul>
+        <li><strong><code>status</code></strong> — Lista las fallas activas y los segundos restantes</li>
+        <li><strong><code>snapshot</code></strong> — Muestra los valores físicos actuales del motor (sin codificación Modbus)</li>
+        <li><strong><code>help</code></strong> — Referencia rápida de todos los comandos disponibles</li>
+        <li><strong><code>shutdown</code></strong> — Detiene completamente el servidor remoto</li>
+        <li><strong><code>quit</code> / <code>exit</code></strong> — Cierra solo la conexión TCP local; el simulador sigue corriendo</li>
+      </ul>
+
+      <hr>
+
+      <h3>Catálogo de fallas</h3>
+
+      <table class="fault-table">
+        <thead>
+          <tr>
+            <th>Falla</th>
+            <th>Comando</th>
+            <th>Descripción</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="fault-name-cell">Outage</td>
+            <td class="fault-cmd-cell">outage &lt;seg&gt;</td>
+            <td>Colapsa tensiones y corrientes a &lt;1%. Simula corte total de suministro.</td>
+            <td><button class="copy-btn" onclick="cp(this,'outage 60')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>outage 60</button></td>
+          </tr>
+          <tr>
+            <td class="fault-name-cell">Phase Loss</td>
+            <td class="fault-cmd-cell">phase_loss &lt;a|b|c&gt; &lt;seg&gt;</td>
+            <td>Una fase cae a 0 V / 0 A. Simula fusible de MT quemado o cable cortado.</td>
+            <td><button class="copy-btn" onclick="cp(this,'phase_loss c 15')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>phase_loss c 15</button></td>
+          </tr>
+          <tr>
+            <td class="fault-name-cell">SAG</td>
+            <td class="fault-cmd-cell">sag &lt;fase|all&gt; &lt;%&gt; &lt;seg&gt;</td>
+            <td>Bajada abrupta del voltaje RMS. Típico en arranque de grandes motores.</td>
+            <td><button class="copy-btn" onclick="cp(this,'sag all 30 5')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>sag all 30 5</button></td>
+          </tr>
+          <tr>
+            <td class="fault-name-cell">SWELL</td>
+            <td class="fault-cmd-cell">swell &lt;fase|all&gt; &lt;%&gt; &lt;seg&gt;</td>
+            <td>Elevación del voltaje RMS. Causado por maniobras o desplazamiento del neutro.</td>
+            <td><button class="copy-btn" onclick="cp(this,'swell a 15 3')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 00-2-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>swell a 15 3</button></td>
+          </tr>
+          <tr>
+            <td class="fault-name-cell">Overload</td>
+            <td class="fault-cmd-cell">overload &lt;fase|all&gt; &lt;mult&gt; &lt;seg&gt;</td>
+            <td>Multiplica la corriente de fase por el factor dado. Testea protecciones ANSI 50/51.</td>
+            <td><button class="copy-btn" onclick="cp(this,'overload b 2.5 8')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>overload b 2.5 8</button></td>
+          </tr>
+          <tr>
+            <td class="fault-name-cell">Low PF</td>
+            <td class="fault-cmd-cell">low_pf &lt;pf&gt; &lt;seg&gt;</td>
+            <td>Hunde el Factor de Potencia. Simula red reactiva sin compensación capacitiva.</td>
+            <td><button class="copy-btn" onclick="cp(this,'low_pf 0.50 20')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>low_pf 0.50 20</button></td>
+          </tr>
+          <tr>
+            <td class="fault-name-cell">Harmonic</td>
+            <td class="fault-cmd-cell">harmonic &lt;fase|all&gt; &lt;thd%&gt; &lt;seg&gt;</td>
+            <td>Eleva el THD por encima del límite del 8% de la norma EN50160.</td>
+            <td><button class="copy-btn" onclick="cp(this,'harmonic all 25 15')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>harmonic all 25 15</button></td>
+          </tr>
+          <tr>
+            <td class="fault-name-cell">PDF (Perfil Auto)</td>
+            <td class="fault-cmd-cell">pdf</td>
+            <td>Inyecta 1–3 fallas aleatorias combinadas. Solicita intervalo y duración total de forma interactiva.</td>
+            <td><button class="copy-btn" onclick="cp(this,'pdf')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>pdf</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 04 PERSISTENCIA -->
+    <section class="doc-section" id="s04">
+      <div class="section-heading">
+        <span class="section-num">04</span>
+        <h2>Estrategia de Persistencia — Doble Bucket</h2>
+      </div>
+
+      <p>El adquisidor <code>cm4000_client.py</code> escribe en dos buckets de InfluxDB con diferentes políticas de retención:</p>
+
+      <table class="bucket-table">
+        <thead>
+          <tr>
+            <th>Bucket</th>
+            <th>Retención</th>
+            <th>Contenido</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>cm4000_realtime</code></td>
+            <td style="white-space: nowrap; color: var(--amber);">1 hora</td>
+            <td>Telemetría de alta frecuencia (1 s). Measurement <code>mediciones_realtime</code> con tensiones, corrientes, potencias, frecuencia, THD y PF. Los acumuladores de energía <code>mod10k</code> están excluidos. Los datos se auto-eliminan al expirar.</td>
+          </tr>
+          <tr>
+            <td><code>cm4000_data</code></td>
+            <td style="white-space: nowrap; color: var(--green);">Infinita</td>
+            <td>Histórico de largo plazo. <code>mediciones_electricas</code> contiene promedios de 15 min con acumuladores <code>kWh</code>, <code>kVARh</code> y demandas máximas. <code>eventos_alarmas</code> registra cada transición <strong>ACTIVA → INACTIVA</strong> con histéresis, segundo a segundo.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 05 APAGADO -->
+    <section class="doc-section" id="s05">
+      <div class="section-heading">
+        <span class="section-num">05</span>
+        <h2>Apagado Seguro y Sincronización</h2>
+      </div>
+
+      <p>Si se realizaron cambios en los paneles de Grafana y se guardaron con el botón <strong>Save</strong>, se debe detener el stack con <code>stop.sh</code> y nunca con <code>CTRL+C</code>.</p>
+
+      <div class="alert alert-red">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        Detener con <code>CTRL+C</code> o <code>docker compose down</code> directamente <strong>perderá los cambios</strong> guardados en Grafana que aún no fueron exportados.
+      </div>
+
+      <h3>Procedimiento de apagado</h3>
+      <ol>
+        <li>Guardar los cambios en Grafana haciendo clic en el botón <strong>Save</strong> en cualquiera de los paneles</li>
+        <li>Ejecutar el script de apagado (<code>./stop.sh</code>) desde la terminal</li>
+        <li>El script exporta ambos dashboards activos vía API HTTP (<code>dashboard.json</code> e <code>infra.json</code>) automáticamente</li>
+        <li>Una vez terminado, hacer commit de los archivos exportados si se quieren versionar los cambios</li>
+      </ol>
+
+      <div class="codeblock" style="margin-top: 1.25rem;">
+        <div class="codeblock-head">
+          <span class="codeblock-lang">bash</span>
+          <button class="copy-btn" onclick="cp(this, './stop.sh')">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Copiar
+          </button>
+        </div>
+        <pre><span class="p">$ </span><span class="k">./stop.sh</span>
+
+<span class="c"># (opcional) Versionar los cambios del dashboard</span>
+<span class="p">$ </span><span class="k">git add provisioning/dashboards/json/dashboard.json</span>
+<span class="p">$ </span><span class="k">git commit -m "chore: update grafana dashboard"</span></pre>
+      </div>
+
+    </section>
+
+    <div class="doc-footer">
+      <span>CM4000 Simulator — v1.0</span>
+      <span>TCP-IP-IPSET · Taller de Informática Industrial</span>
+    </div>
+
+  </div><!-- /content -->
+
+  <script>
+    // Copy to clipboard
+    function cp(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.innerHTML;
+        btn.classList.add('copied');
+        btn.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copiado`;
+        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 1800);
+      });
+    }
+
+    // Flux tab copy
+    const fluxContents = {
+      p1: `from(bucket: "cm4000_realtime")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r["_measurement"] == "mediciones_realtime")\n  |> filter(fn: (r) => r["_field"] == "I_a")\n  |> keep(columns: ["_time", "_value", "_field"])`,
+      p2: `from(bucket: "cm4000_data")\n  |> range(start: -24h)\n  |> filter(fn: (r) => r["_measurement"] == "mediciones_electricas")\n  |> filter(fn: (r) => r["_field"] == "kW_tot")\n  |> keep(columns: ["_time", "_value", "_field"])`,
+      p3: `from(bucket: "cm4000_data")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r["_measurement"] == "eventos_alarmas")\n  |> filter(fn: (r) => r["_field"] == "valor_disparo")\n  |> keep(columns: ["_time", "tipo_alarma", "estado", "_value"])\n  |> group()\n  |> sort(columns: ["_time"], desc: true)`,
+    };
+    let activePanel = 'p1';
+
+    function sw(btn, id) {
+      btn.closest('.flux-wrap').querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+      btn.closest('.flux-wrap').querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+      btn.classList.add('on');
+      document.getElementById(id).classList.add('on');
+      activePanel = id;
+    }
+
+    function cpFlux(btn) {
+      cp(btn, fluxContents[activePanel]);
+    }
+
+    // Reveal on scroll
+    const io = new IntersectionObserver(es => {
+      es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+    }, { threshold: 0.06 });
+    document.querySelectorAll('.doc-section').forEach(s => io.observe(s));
+
+    // Sidebar active link
+    const sections = document.querySelectorAll('.doc-section');
+    const links = document.querySelectorAll('.sidebar-link');
+    const sio = new IntersectionObserver(es => {
+      es.forEach(e => {
+        if (e.isIntersecting) {
+          links.forEach(l => l.classList.remove('active'));
+          const link = document.querySelector(`.sidebar-link[href="#${e.target.id}"]`);
+          if (link) link.classList.add('active');
+        }
+      });
+    }, { threshold: 0.4 });
+    sections.forEach(s => sio.observe(s));
+  </script>
+
+</body>
+</html>
+
